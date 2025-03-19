@@ -1,6 +1,6 @@
 import './createPost.js';
 
-import { Devvit, useState, useWebView } from '@devvit/public-api';
+import { Devvit, Subreddit, useState, useWebView, useForm } from '@devvit/public-api';
 
 import type { DevvitMessage, WebViewMessage } from './message.js';
 
@@ -13,23 +13,44 @@ Devvit.configure({
 Devvit.addCustomPostType({
   name: 'Web View Example MY VERY FIRST EXPERIENCE',
   height: 'tall',
-  render: (context) => {
-    // Load username with `useAsync` hook
+  render: (context) => { // FIXED: Removed 'setName' from parameters
+
+    // Load username with `useState` hook
     const [username] = useState(async () => {
       return (await context.reddit.getCurrentUsername()) ?? 'anon';
     });
 
-    // Load latest counter from redis with `useAsync` hook
+    console.log(username);
+
+    // Load latest counter from redis with `useState` hook
     const [counter, setCounter] = useState(async () => {
       const redisCount = await context.redis.get(`counter_${context.postId}`);
       return Number(redisCount ?? 0);
     });
 
-    const webView = useWebView<WebViewMessage, DevvitMessage>({
-      // URL of your web view content
-      url: 'index.html',
+    // FIX: Create a local state to store the 'name'
+    const [name, setName] = useState("");
 
-      // Handle messages sent from the web view
+    const myForm = useForm(
+      {
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+            label: 'Your Post',
+          },
+        ],
+      },
+      (values) => {
+        // onSubmit handler: Update the state variable correctly
+        setName(values.name ?? "");
+      }
+    );
+
+    
+
+    const webView = useWebView<WebViewMessage, DevvitMessage>({
+      url: 'index.html',
       async onMessage(message, webView) {
         switch (message.type) {
           case 'webViewReady':
@@ -47,7 +68,6 @@ Devvit.addCustomPostType({
               message.data.newCounter.toString()
             );
             setCounter(message.data.newCounter);
-
             webView.postMessage({
               type: 'updateCounter',
               data: {
@@ -60,7 +80,7 @@ Devvit.addCustomPostType({
         }
       },
       onUnmount() {
-        context.ui.showToast('Web view closed! wait i can modify this?');
+        context.ui.showToast('Ahh shit, here we go again');
       },
     });
 
@@ -87,9 +107,23 @@ Devvit.addCustomPostType({
                 {counter ?? ''}
               </text>
             </hstack>
+            <hstack>
+              <text size="medium">Thought:</text>
+              <text size="medium" weight="bold">
+                {' '}
+                {name ?? ''}
+              </text>
+            </hstack>
           </vstack>
           <spacer />
-          <button onPress={() => webView.mount()}>Launch App</button>
+          <button
+            onPress={() => {
+              context.ui.showForm(myForm);
+            }}
+          >
+            Post
+          </button>
+          <button onPress={() => webView.mount()}>Launch</button>
         </vstack>
       </vstack>
     );
