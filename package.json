@@ -11,5 +11,11 @@
   },
   "devDependencies": {
     "typescript": "5.3.2"
+  },
+  "scripts": {
+    "dev:game": "vite build --watch",
+    "dev:devvit": "devvit playtest r/devtestenv",
+    "vite": "vite",
+    "upload": "devvit upload"
   }
 }
